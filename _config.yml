@@ -1,3 +1,4 @@
 theme: jekyll-theme-merlot
 title: [CRFO.ORG]
 description: [Collaborative Radio Frequency Observatory]
+show_downloads: ["true"]
