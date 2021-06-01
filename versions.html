@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<style>
+body { font-family: Segoe UI; font-size: 16px; background-color: white; }
+h1 { font-size: 32px; font-weight: 600; line-height: 1.25; margin-bottom: 16px; margin-top: 24px; }
+h2 { font-size: 24px; font-weight: 600; line-height: 1.25; margin-bottom: 16px; margin-top: 24px; }
+.versions table { border-collapse: collapse; }
+.versions th { border: 1px solid black; width: 120px; background-color: rgb(228, 233, 244); }
+.versions td { border: 1px solid black; }
+.versions tr:hover { background-color: #ffff99; }
+.versions .corner { background-color: white; border: none; }
+.api { text-align: left; border: 1px solid black; width: 420px; background-color: rgb(228, 233, 244); }
+.version { text-align: right; border: 1px solid black; }
+.change { background-color: #ffc45a; text-align: right; border: 1px solid black; } 
+.tooltip { background-color: red; text-align: right; border: 1px solid black; }
+.tooltip .tooltiptext { visibility: hidden; width: 400px; background-color: black; color: #fff; text-align: left; border-radius: 6px; padding-left: 20px; position: absolute; z-index: 1; margin-left: 20px; margin-top: 20px; opacity: 0; transition: opacity 0.5s; }
+.tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+.progress {font-size: 16px; width: 100%; margin-top: 10px; margin-bottom: 20px;} 
+.usage { font-family: Lucida Console, Courier; margin-left: 50px; background-color: lavender; border-radius: 3px; padding: 16px; width: 600px; }
+.err { font-weight: bold; color: firebrick; }
+.usage-tr { background-color: white; }
+.usage-th { font-family: Lucida Console, Courier; font-weight: bold; text-align: left; padding-right: 20px; padding-top: 5px; vertical-align: bottom; border-bottom: 1px solid silver; }
+.usage-td { text-align: left; padding-top: 5px; vertical-align: bottom; padding-bottom: 2px }
+</style>
+<body>
+<script src="https://cdn.polyfill.io/v3/polyfill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/yamljs/0.3.0/yaml.min.js"></script>
+<script src="https://jdegre.github.io/parser/parser.js"></script>
+<script>
+  // (c) 2020. Jesus de Gregorio. Ericsson.
+  urlParams = new URLSearchParams(location.search);
+  repo = urlParams.get('repo');
+  r = document.referrer.split("?")[0].split("/");
+  if (repo == null) repo = r[3]+'/'+r[4];
+  if (repo == null || repo.includes('undefined')) error = 'No repository defined';
+  if (typeof error !== 'undefined')
+    document.body.innerHTML = '<br/><div class=\"err\">Error: ' + error + '</div><br/><br/><u>Script usage</u><p/>Query parameters:<p/><div class=\"usage\">./versions.html?<b>repo</b>=&lt...&gt</div><p/><table><tr class=\"usage-tr\"><th class=\"usage-th\">repo:</th><td class=\"usage-td\">Github user/repository; e.g. \'jdegre/5GC_APIs\'. If not included, it is read from HTTP referrer header, if available</td></tr></table>';
+  else {
+    makeIntro();
+    versions(repo, 'github');
+  }
+
+  function makeIntro() {
+    document.body.innerHTML = '<h1>API Versions</h1>' +
+      '<h2>Repository: <mark>' + repo + '</mark></h2>' +
+      '<div class=\"progress\" id=\"progress\"></div>' +
+      '<div class=\"versions\" id=\"versions\"></div><br/><br/>';
+  } 
+</script></body>

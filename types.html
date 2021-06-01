@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<style>
+body {font-family: Segoe UI; font-size: 16px;}
+h1 {font-size: 32px; font-weight: 600; line-height: 1.25; margin-bottom: 16px; margin-top: 24px;}
+h2 {font-size: 24px; font-weight: 600; line-height: 1.25; margin-bottom: 16px; margin-top: 24px;}
+button {font-size: 16px; background-color: rgb(230, 235, 241); border: 1px solid; width:300px; text-align: left; padding: 5px 0px 5px 5px; margin-bottom: 10px;}
+pre {counter-reset: line;}
+code {font-family: Segoe UI; line-height: 28px; counter-increment: line; font-size: 16px; display: block; width: 100%;}
+code::before {font-family: Segoe UI; text-align: right; background-color: white; content: counter(line); display: inline-block; width: 1.5em; border-right: 1px solid #ddd; padding: 0 .5em; margin-right: .5em; color: #888; -webkit-user-select: none; -ms-user-select: none;}
+.lint.text {font-size: 16px; width: 100%; margin-top: 10px; margin-bottom: 20px;} 
+.datatypeinput {font-size: 16px; height: 26px; padding-left: 5px;}
+.container {display: block; width: 45em; box-shadow: 5px 5px 5px rgba(0,0,0,0.6); -moz-box-shadow: 5px 5px 5px rgba(0,0,0,0.6); -webkit-box-shadow: 5px 5px 5px rgba(0,0,0,0.6); -o-box-shadow: 5px 5px 5px rgba(0,0,0,0.6); border-radius: 25px;}
+</style>
+<body>
+<script src="https://cdn.polyfill.io/v3/polyfill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/yamljs/0.3.0/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/6.10.2/ajv.min.js"></script>
+<script src="https://jdegre.github.io/parser/parser.js"></script>
+<script>
+  // (c) 2019. Jesus de Gregorio. Ericsson.
+  urlParams = new URLSearchParams(location.search);
+  repo = urlParams.get('repo');
+  branch = urlParams.get('branch');
+  r = document.referrer.split("?")[0].split("/");
+  if (repo == null) repo = r[3]+'/'+r[4];
+  if (branch == null) branch = ''+r[6];
+  if (branch == null || branch.includes('undefined')) branch = 'master';
+  if (repo == null || repo.includes('undefined')) repo = 'jdegre/5GC_APIs';
+
+  host = 'https://raw.githubusercontent.com/';
+  url = host + repo + '/' + branch + '/' + 'README.md';
+
+  makeIntro();
+  
+  $.get(url, function( data ) {
+    apiIdx = 0;
+    lines = data.split('\n');
+    inList = 0;
+    readingAPIs = false;
+    for (i=0; i<lines.length; i++) {
+      currentLine = lines[i].trim();
+      firstChar = '';
+      if (currentLine.indexOf('<!-- APIs') >= 0) readingAPIs = true;
+      if (readingAPIs) {
+        if (currentLine.length > 0) firstChar = currentLine.charAt(0);
+        if (firstChar == '#') {
+          if (inList == 1) { 
+            inList = 0;
+          }
+          second = '';
+          if (currentLine.length > 1) second = currentLine.charAt(1);
+          if (second == '#') {
+            title = currentLine.substr(2).trim();
+          }
+          else {
+            title = currentLine.substr(1).trim();
+          }
+        }
+        else if (firstChar == '*') {
+          if (inList == 0) {
+            inList = 1;
+          }
+          i1 = currentLine.indexOf('*');
+          text = currentLine.split('[')[1].split(']')[0];
+          yaml = currentLine.split('?yaml=')[1].split(')')[0];
+          yamlUrl = host + repo + '/' + branch + '/' + yaml;
+          writeApiEntry(apiIdx, text, yamlUrl);
+          apiIdx++;
+        }
+      }
+    }
+    readAllYaml();  
+  });
+  
+  function makeIntro() {
+    document.body.innerHTML = '<h1>Data Type Finder</h1>' +
+      '<h2>Repository: <mark>' + repo + '</mark></h2>' +
+      '<h2>Branch: <mark>' + branch + '</mark></h2>' +
+      '<p>Enter the name of a data type to find which OpenAPI specs are using it, by direct or indirect reference ($ref) to it.<p>' +
+      'Data type: <input class=\"datatypeinput\" type=\"text\" id=\"datatype\" size=\"40\" autofocus autocomplete=\"off\" oninput=\"onInput()\"><p>' +
+      '<div id=\"fileselect\"></div>' +
+      '<div class=\"lint text\" id=\"status\"></div>' +
+      '<div class=\"container\" id=\"result\"></div>';
+  }
+  
+  function writeApiEntry(i, t, y) {
+    var apiEntry = { title: t, yaml: y }
+    apis.push(apiEntry);
+  }
+  
+  function onInput() {
+    processDataType(document.getElementById('datatype').value);
+  }
+
+  function onClick(id) {  
+    selectFile(id.split('button')[1]);
+  }
+
+</script></body>

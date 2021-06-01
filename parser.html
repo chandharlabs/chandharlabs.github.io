@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+body {font-family: Segoe UI, Helvetica, Arial, sans-serif;}
+h1 {font-size: 2em; font-weight: 600; line-height: 1.25; margin-bottom: 16px; margin-top: 24px;}
+h2 {font-size: 1.5em; font-weight: 600; line-height: 1.25; margin-bottom: 16px; margin-top: 24px;}
+p {font-size: 16px; line-height: 24px; box-sizing: border-box; color: rgb(36, 41, 46); margin-bottom: 16px; margin-top: 0px; overflow-wrap: break-word;}
+.result {display: inline;}
+.test.pass {font-size: 16px; display: inline; color: #159626;}
+.test.fail {font-size: 16px; display: inline; color: #c00000;}
+a.button {background-color: rgb(230, 235, 241); background-image: linear-gradient(-180deg,#fafbfc,#eff3f6 90%); background-position: -6px 50%; background-position-x: -6px; background-position-y: 50%; background-repeat: repeat-x; background-size: 110% 110%; border-bottom-color: rgba(27, 31, 35, 0.35); border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; border-bottom-style: solid; border-bottom-width: 1px; border-image-outset: 0; border-image-repeat: stretch stretch; border-image-slice: 100%; border-image-source: none; border-image-width: 1; border-left-color: rgba(27, 31, 35, 0.35); border-left-style: solid; border-left-width: 1px; border-right-color: rgba(27, 31, 35, 0.35); border-right-style: solid; border-right-width: 1px; border-top-color: rgba(27, 31, 35, 0.35); border-top-left-radius: 3px; border-top-right-radius: 3px; border-top-style: solid; border-top-width: 1px; box-sizing: border-box; color: rgb(36, 41, 46); cursor: pointer; display: block; float: left; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 20px; outline-width: 0px; overflow-wrap: break-word; padding-bottom: 3px; padding-left: 10px; padding-right: 10px; padding-top: 3px; position: relative; text-decoration: none; text-decoration-line: none; vertical-align: middle;}
+a.button:hover {background-color: rgb(230, 235, 241); background-image: linear-gradient(-180deg,#f0f3f6,#e6ebf1 90%);}
+a.button:active {background-color: rgb(230, 235, 241); background-image: linear-gradient(-180deg,#d0d3d6,#e6ebf1 90%);}
+a.minibutton {background-color: rgb(230, 235, 241); background-image: linear-gradient(-180deg,#fafbfc,#eff3f6 90%); background-position: -6px 50%; background-position-x: -6px; background-position-y: 50%; background-repeat: repeat-x; background-size: 110% 110%; border-bottom-color: rgba(27, 31, 35, 0.35); border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; border-bottom-style: solid; border-bottom-width: 1px; border-image-outset: 0; border-image-repeat: stretch stretch; border-image-slice: 100%; border-image-source: none; border-image-width: 1; border-left-color: rgba(27, 31, 35, 0.35); border-left-style: solid; border-left-width: 1px; border-right-color: rgba(27, 31, 35, 0.35); border-right-style: solid; border-right-width: 1px; border-top-color: rgba(27, 31, 35, 0.35); border-top-left-radius: 3px; border-top-right-radius: 3px; border-top-style: solid; border-top-width: 1px; box-sizing: border-box; color: rgb(36, 41, 46); cursor: pointer; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 20px; outline-width: 0px; overflow-wrap: break-word; padding-bottom: 0px; padding-left: 10px; padding-right: 10px; padding-top: 0px; text-decoration: none; text-decoration-line: none; vertical-align: top;}	
+a.minibutton:hover {background-color: rgb(230, 235, 241); background-image: linear-gradient(-180deg,#f0f3f6,#e6ebf1 90%);}
+a.minibutton:active {background-color: rgb(230, 235, 241); background-image: linear-gradient(-180deg,#d0d3d6,#e6ebf1 90%);}
+.lint.text {font-family: Consolas; font-size: 12px; width: 100%; height:auto; border: 1px solid #c0c0c0; overflow: auto; display: none; margin-top: 10px; margin-bottom: 20px;} 
+.lint.ok { color: #159626; }
+.lint.warning { color: #c00000; }
+</style>
+</head>
+<body>
+<script src="https://cdn.polyfill.io/v3/polyfill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/yamljs/0.3.0/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/6.10.2/ajv.min.js"></script>
+<script src="https://jdegre.github.io/parser/parser.js"></script>
+<script>
+  // (c) 2019. Jesus de Gregorio. Ericsson.
+  urlParams = new URLSearchParams(location.search);
+  repo = urlParams.get('repo');
+  branch = urlParams.get('branch');
+  r = document.referrer.split("?")[0].split("/");
+  if (repo == null) repo = r[3]+'/'+r[4];
+  if (branch == null) branch = ''+r[6];
+  if (branch == null || branch.includes('undefined')) branch = 'master';
+  if (repo == null || repo.includes('undefined')) repo = 'jdegre/5GC_APIs';
+
+  host = 'https://raw.githubusercontent.com/';
+  url = host + repo + '/' + branch + '/' + 'README.md';
+  makeIntro();
+  
+  $.get(url, function( data ) {
+    apiIdx = 0;
+    lines = data.split('\n');
+    inList = 0;
+    readingAPIs = false;
+    for (i=0; i<lines.length; i++) {
+      currentLine = lines[i].trim();
+      firstChar = '';
+      if (currentLine.indexOf('<!-- APIs') >= 0) readingAPIs = true;
+      if (readingAPIs) {
+        if (currentLine.length > 0) firstChar = currentLine.charAt(0);
+        if (firstChar == '#') {
+          if (inList == 1) { 
+            writeEndList(); inList = 0;
+          }
+          second = '';
+          if (currentLine.length > 1) second = currentLine.charAt(1);
+          if (second == '#') {
+            title = currentLine.substr(2).trim();
+            writeHeading(2, title);
+          }
+          else {
+            title = currentLine.substr(1).trim();
+            writeHeading(1, title);
+          }
+        }
+        else if (firstChar == '*') {
+          if (inList == 0) {
+            inList = 1;
+            writeStartList();
+          }
+          i1 = currentLine.indexOf('*');
+          text = currentLine.split('[')[1].split(']')[0];
+          yaml = currentLine.split('?yaml=')[1].split(')')[0];
+          yamlUrl = host + repo + '/' + branch + '/' + yaml;
+          writeListItem(apiIdx, text, yamlUrl);
+          apiIdx++;
+        }
+      }
+    }
+  });
+  
+  function makeIntro() {
+    document.body.innerHTML = '<h1>OpenAPI Specification Files for 3GPP 5G Core Network</h1>' +
+      '<h2>Repository: <mark>' + repo + '</mark></h2>' +
+      '<h2>Branch: <mark>' + branch + '</mark></h2><br/>' +
+      '<p>The YAML files below have been created by 3GPP, and the master source can be found in the ' +
+      '<a href=\"http://www.3gpp.org/DynaReport/29-series.htm\">3GPP site</a> ' +
+      'as part of the official 3GPP Technical Specifications.</p>' +
+      '<p>© 2019, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC). All rights reserved.</p><p></p>' +
+      '<p>The links below will open the Swagger Editor or Swagger UI tools, and auto-load the OpenAPI YAML file of each Network Function (NF) API.</p>' +
+      '<p>The "Parse" button, next to each API, executes a real time validation of the API and its dependencies ' +
+      'by invoking the <a href=\"https://github.com/APIDevTools/swagger-parser\">APIDevTools</a> Swagger Parser/Validator.</p>' +
+      '<a href=\"javascript:parse()\" id=\"buttStart\" class=\"button\">Parse all APIs</a><br/>';
+  }
+  
+  function writeHeading(i, text) {
+    if (i == 1) document.body.innerHTML += '<h1>' + text + '</h1>';
+    if (i == 2) document.body.innerHTML += '<h2>' + text + '</h2>';
+  }
+  
+  function writeStartList() { document.body.innerHTML += '<ul>'; }
+  
+  function writeListItem(i, t, y) {
+    document.body.innerHTML += '<li><a href=\"javascript:parse(' + i + ')\" id=\"buttonp' + i +
+    '\" class=\"minibutton\">Parse</a> <a href=\"javascript:lint(' + i + ')\" id=\"buttonl' + i +
+    '\" class=\"minibutton\">Lint</a> ' + t + ' ' +
+    '<a href=\"https://jdegre.github.io/editor/?url=' + y +
+    '\">(Editor)</a> <a href=\"https://petstore.swagger.io/?url=' + y +
+    '\">(UI)</a> <div id=\"result' + i +
+    '\" class=\"result\"></div><br/><div class=\"lint text\" id=\"textarea' + i +
+    '\"></div></li>';
+    var apiEntry = { title: t, yaml: y }
+    apis.push(apiEntry);
+  }
+  
+  function writeEndList() { document.body.innerHTML += '</ul>'; }
+ 
+</script>
+</body>
